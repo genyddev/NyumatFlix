@@ -1,73 +1,9 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
 node_modules/
-/.pnp
-.pnp.js
-
-# testing
-/coverage
-/benchmark-results/
-
-# next.js
-**/.next/
-/out/
-/apps/web/public/vendor/player/
-/apps/web/data/anime-mappings/
-.turbo/
-
-# production
-/build
-.env.*
-.env
-!.env.example
-de-ber.conf
-*.wg.conf
-
-# misc
+.next/
+out/
+coverage/
+*.log
 .DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# playwright-cli artifacts
-.playwright-cli/
-/playwright-report/
-/test-results/
-
-# local env files
+.env
 .env.*
 !.env.example
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-certificates
-.cursor
-
-# script caches
-scripts/.cache/
-
-# vendored calluspirates shared package lives in repo
-# packages/calluspirates-shared is tracked
-
-# local notes
-SCRAPING.md
-SCRAPING_OLD.md
-UI_GOAL.md
-
-# act local secrets
-.act.secrets
-.deploy-desk/
-packages/deploy-desk/dist/
-packages/deploy-desk/dist-server/
-
-# local playwright captures
-output/

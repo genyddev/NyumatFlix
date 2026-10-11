@@ -1,10 +1,14 @@
 {
   "compilerOptions": {
-    "types": ["@testing-library/jest-dom", "vitest/globals"],
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
+    "target": "ES2022",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": false,
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
-    "noImplicitAny": false,
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
@@ -20,18 +24,19 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
-    },
-    "target": "ES2017"
+      "@/*": [
+        "./*"
+      ]
+    }
   },
   "include": [
     "next-env.d.ts",
-    "types/**/*.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "setupTests.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "../../packages/**"]
+  "exclude": [
+    "node_modules"
+  ]
 }

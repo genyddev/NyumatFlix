@@ -1,217 +1,22 @@
-import { PasskeyGate } from "@/components/auth/passkey-gate";
-import { PasskeySignalSync } from "@/components/providers/passkey-signal-sync";
-import { ApiFetchBootstrap } from "@/components/providers/api-fetch-bootstrap";
-import { CapWarmup } from "@/components/cap/cap-warmup";
-import { JsonLdScript } from "@/components/seo/json-ld-script";
-import { buildWebsiteStructuredData } from "@/lib/seo/structured-data";
-import { AppChrome } from "@/components/layout/app-chrome";
-import { RouteScrollResetGate } from "@/components/layout/route-scroll-reset-gate";
-import { AdblockGateProvider } from "@/components/providers/adblock-gate-provider";
-import { AuthSessionProvider } from "@/components/providers/session-provider";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryProvider } from "@/lib/query-client";
-import { cn, validateEnv } from "@/lib/utils";
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
-import Script from "next/script";
-import { Suspense } from "react";
+import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
-import {
-  DEFAULT_DESCRIPTION,
-  SITE_NAME,
-  SITE_TAGLINE,
-  SITE_URL,
-  UMAMI_URL,
-  UMAMI_WEBSITE_ID,
-} from "@/lib/constants";
-import {
-  DEFAULT_OG_IMAGE,
-  DEFAULT_OG_IMAGE_TYPE,
-  OG_IMAGE_SIZE,
-} from "@/lib/seo/constants";
-import { DevtoolsTrollProvider } from "@/components/providers/devtools-troll-provider";
-import { FeatureFlagsProvider } from "@/components/providers/feature-flags-provider";
-import { getShellSiteFlags } from "@/lib/flags/site-flags-server";
-import { RequestCatalogCardStyle } from "@/components/providers/request-catalog-card-style";
-import { StorageHydrationProvider } from "@/components/providers/storage-hydration-provider";
-import { CatalogCardStyleProvider } from "@/lib/catalog-card-presentation";
-import { catalogCardStyleBootstrapScript } from "@/lib/user/catalog-card-style-store";
-import { getCdnOrigin } from "@/lib/cdn";
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  weight: "variable",
-  variable: "--font-manrope",
-  display: "swap",
-});
-
-if (process.env.NODE_ENV !== "production") {
-  validateEnv();
-}
 
 export const metadata: Metadata = {
-  metadataBase: new URL(`${SITE_URL}/`),
-  title: `${SITE_NAME} | ${SITE_TAGLINE}`,
-  description: DEFAULT_DESCRIPTION,
-  icons: {
-    icon: [
-      { url: "/favicon.ico?v=2", type: "image/x-icon" },
-      { url: "/icon.png?v=2", sizes: "256x256", type: "image/png" },
-    ],
-    shortcut: "/favicon.ico?v=2",
-    apple: [
-      {
-        url: "/apple-touch-icon.png?v=2",
-        sizes: "180x180",
-        type: "image/png",
-      },
-      {
-        url: "/apple-touch-icon-120x120.png?v=2",
-        sizes: "120x120",
-        type: "image/png",
-      },
-    ],
-  },
-  openGraph: {
-    type: "website",
-    url: SITE_URL,
-    siteName: SITE_NAME,
-    title: `${SITE_NAME} | ${SITE_TAGLINE}`,
-    description: DEFAULT_DESCRIPTION,
-    images: [
-      {
-        url: DEFAULT_OG_IMAGE,
-        width: OG_IMAGE_SIZE.width,
-        height: OG_IMAGE_SIZE.height,
-        type: DEFAULT_OG_IMAGE_TYPE,
-        alt: `${SITE_NAME} | ${SITE_TAGLINE}`,
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${SITE_NAME} | ${SITE_TAGLINE}`,
-    description: DEFAULT_DESCRIPTION,
-    images: [DEFAULT_OG_IMAGE],
-  },
+  title: { default: "Udhekryqi Filma", template: "%s — Udhekryqi Filma" },
+  description: "Një katalog lokal demonstrues me filma tërësisht imagjinarë.",
 };
 
-export default async function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  // Runs before first paint: restores persisted prefs from cookie /
-  // localStorage so SSR HTML and the first client render already agree —
-  // no settings / layout flip after hydration.
-  const siteFlags = await getShellSiteFlags();
-  const defaultCatalogCardStyle = siteFlags.experienceDefaults.catalogCardStyle;
-  const lockCatalogCardStyle =
-    siteFlags.experienceDefaults.lockCatalogCardStyle;
-  const defaultAmbientGlow =
-    siteFlags.ambientGlowEnabled && siteFlags.experienceDefaults.ambientGlow
-      ? "1"
-      : "0";
-  const catalogCardStyleBootstrap = catalogCardStyleBootstrapScript(
-    defaultCatalogCardStyle,
-    lockCatalogCardStyle,
-  );
-  const ambientGlowBootstrap = `(function(){try{var d=document.documentElement;var m=document.cookie.match(/(?:^|;\\s*)nf-ambient-glow=([^;]*)/);var v=m&&m[1]?decodeURIComponent(m[1]):null;if(v!=='0'&&v!=='1'){try{v=localStorage.getItem('nyumatflix:ambient-glow');}catch(e){v=null;}}if(v!=='0'&&v!=='1'){v='${defaultAmbientGlow}';}d.dataset.ambientGlow=v;}catch(e){}})();`;
-
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      className={cn(manrope.variable, "dark")}
-      suppressHydrationWarning
-    >
-      <head>
-        {getCdnOrigin() ? (
-          <link
-            rel="preconnect"
-            href={getCdnOrigin()}
-            crossOrigin="anonymous"
-          />
-        ) : null}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var p=location.pathname;var h=location.hostname;if(p==='/ffs'||p.indexOf('/ffs/')===0||h.indexOf('ffs.')===0){document.documentElement.classList.add('ffs-admin-root');}}catch(e){}})();`,
-          }}
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: "history.scrollRestoration='manual'",
-          }}
-        />
-        <script
-          id="nf-catalog-card-style"
-          dangerouslySetInnerHTML={{ __html: catalogCardStyleBootstrap }}
-        />
-        <script
-          id="nf-ambient-glow"
-          dangerouslySetInnerHTML={{ __html: ambientGlowBootstrap }}
-        />
-        {process.env.NODE_ENV === "production" && (
-          <>
-            <Script
-              id="umami-recorder-sample"
-              strategy="afterInteractive"
-              dangerouslySetInnerHTML={{
-                __html: `(function(){try{if(Math.random()>=0.05)return;var s=document.createElement('script');s.defer=true;s.src=${JSON.stringify(`${UMAMI_URL}/recorder.js`)};s.dataset.websiteId=${JSON.stringify(UMAMI_WEBSITE_ID)};document.head.appendChild(s);}catch(e){}})();`,
-              }}
-            />
-            <Script
-              defer
-              src={`${UMAMI_URL}/script.js`}
-              data-website-id={UMAMI_WEBSITE_ID}
-              strategy="afterInteractive"
-            />
-          </>
-        )}
-      </head>
-      <body className={cn("flex min-h-dvh flex-col bg-background font-sans")}>
-        <JsonLdScript data={buildWebsiteStructuredData()} />
-        <ApiFetchBootstrap />
-        <Suspense fallback={null}>
-          <CapWarmup />
-        </Suspense>
-        <Suspense fallback={null}>
-          <RouteScrollResetGate />
-        </Suspense>
-        <QueryProvider>
-          <FeatureFlagsProvider initialFlags={siteFlags}>
-            <AuthSessionProvider>
-              <PasskeySignalSync />
-              <PasskeyGate>
-                <StorageHydrationProvider />
-                <TooltipProvider>
-                  <AdblockGateProvider>
-                    <DevtoolsTrollProvider>
-                      <AppChrome>
-                        <Suspense
-                          fallback={
-                            <CatalogCardStyleProvider
-                              initialStyle={defaultCatalogCardStyle}
-                              locked={lockCatalogCardStyle}
-                            >
-                              {children}
-                            </CatalogCardStyleProvider>
-                          }
-                        >
-                          <RequestCatalogCardStyle
-                            fallback={defaultCatalogCardStyle}
-                            locked={lockCatalogCardStyle}
-                          >
-                            {children}
-                          </RequestCatalogCardStyle>
-                        </Suspense>
-                      </AppChrome>
-                    </DevtoolsTrollProvider>
-                  </AdblockGateProvider>
-                </TooltipProvider>
-              </PasskeyGate>
-            </AuthSessionProvider>
-          </FeatureFlagsProvider>
-        </QueryProvider>
+    <html lang="sq">
+      <body>
+        <SiteHeader />
+        <main>{children}</main>
+        <footer className="site-footer">
+          <p>Udhekryqi Filma · Katalog demonstrues lokal</p>
+          <p>Mbështetur në burimin NyumaFlix të licencuar me MIT.</p>
+        </footer>
       </body>
     </html>
   );

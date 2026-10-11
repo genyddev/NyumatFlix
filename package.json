@@ -1,60 +1,17 @@
 {
-  "name": "nyumatflix",
-  "version": "3.0.0",
+  "name": "udhekryqi-filma",
+  "version": "0.1.0",
   "private": true,
-  "type": "module",
-  "packageManager": "bun@1.3.5",
+  "packageManager": "pnpm@11.25.0",
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "scripts": {
-    "dev": "turbo dev --filter=@nyumatflix/web",
-    "build": "turbo build",
-    "test": "turbo test",
-    "test:ci": "turbo test --filter=@nyumatflix/web",
-    "typecheck": "turbo typecheck",
-    "type-check": "turbo typecheck",
-    "lint": "turbo lint",
-    "lint:fix": "turbo lint -- --write",
-    "check-format": "turbo check-format --filter=@nyumatflix/web",
-    "format": "turbo check-format --filter=@nyumatflix/web -- --write",
-    "precommit": "bun run check-format && bun run lint && bun run type-check",
-    "prepare": "husky",
-    "dev:stack": "./scripts/bootstrap-scrape-vpn.sh local",
-    "dev:sync": "./scripts/bootstrap-scrape-vpn.sh sync-env",
-    "stack:status": "./scripts/local-compose.sh ps",
-    "flaresolverr:up": "./scripts/local-compose.sh up -d flaresolverr",
-    "flaresolverr:down": "./scripts/local-compose.sh stop flaresolverr",
-    "flaresolverr:logs": "./scripts/local-compose.sh logs -f flaresolverr",
-    "flipt:up": "./scripts/local-compose.sh up -d flipt",
-    "flipt:down": "./scripts/local-compose.sh stop flipt",
-    "flipt:logs": "./scripts/local-compose.sh logs -f flipt",
-    "cap:up": "./scripts/local-compose.sh up -d cap cap-valkey",
-    "cap:update": "./scripts/local-compose.sh pull cap cap-valkey && ./scripts/local-compose.sh up -d cap cap-valkey",
-    "cap:status": "./scripts/local-compose.sh ps cap cap-valkey",
-    "cap:down": "./scripts/local-compose.sh stop cap cap-valkey",
-    "cap:logs": "./scripts/local-compose.sh logs -f cap",
-    "bp": "./scripts/deploy.sh bp",
-    "deploy": "bun scripts/nyumatflix.ts",
-    "deploy:fast": "bun scripts/nyumatflix.ts fast",
-    "deploy:desk": "bun --filter @nyumatflix/deploy-desk dev",
-    "deploy:desk:build": "bun --filter @nyumatflix/deploy-desk build",
-    "deploy:plain": "./scripts/deploy-remote.sh",
-    "prepare-movi-player": "node apps/web/scripts/prepare-movi-player.mjs",
-    "deploy:env": "./scripts/sync-prod-env.sh push",
-    "db:migrate:prod": "ENV_FILE=.env.prod ./scripts/db-migrate-if-needed.sh",
-    "rotate": "bun scripts/rotate-vpn.mts"
-  },
-  "devDependencies": {
-    "husky": "^9.1.6",
-    "playwright": "^1.62.1",
-    "turbo": "^2.5.4"
-  },
-  "overrides": {
-    "@types/react": "19.2.0",
-    "@types/react-dom": "19.2.0",
-    "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "dev": "pnpm --dir apps/web dev",
+    "build": "pnpm --dir apps/web build",
+    "start": "pnpm --dir apps/web start",
+    "typecheck": "pnpm --dir apps/web typecheck",
+    "type-check": "pnpm --dir apps/web typecheck",
+    "test": "pnpm --dir apps/web test"
   }
 }
