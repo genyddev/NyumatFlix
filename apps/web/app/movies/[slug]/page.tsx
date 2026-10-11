@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PlayerPlaceholder } from "@/components/player-placeholder";
+import { SafeMoviePlayer } from "@/components/player/safe-movie-player";
 import { PosterArt } from "@/components/poster-art";
 import { demoMovies, formatDuration, getDemoMovie } from "@/lib/demo-catalogue";
 
@@ -31,7 +31,12 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ sl
             <p className="detail-summary">{movie.synopsis}</p>
           </div>
         </div>
-        <PlayerPlaceholder />
+        <SafeMoviePlayer
+          movieId={movie.slug}
+          title={movie.title}
+          rightsStatus={movie.rightsStatus}
+          source={movie.source}
+        />
       </div>
     </article>
   );

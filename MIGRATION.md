@@ -27,4 +27,4 @@ The removed configuration included catalogue keys, authentication/email secrets,
 
 ## Current safety boundary
 
-The application has no API routes, iframe renderer, video element, player package, provider URL field, proxy handler, scraper, authentication layer, email integration, or database adapter. Its content module stores presentation data only. Response headers restrict network connections to the same origin and prohibit frames, media sources, objects, and form submissions to other origins.
+The phase-one application initially had no playback implementation. The subsequent safe-player revision is documented in `PLAYER_SECURITY.md`: it adds only rights-gated Internet Archive and Mux playback, without restoring provider discovery, arbitrary URLs, scraping, proxying, authentication, uploads, email, or a database.
