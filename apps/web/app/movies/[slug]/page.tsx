@@ -39,7 +39,6 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ sl
           </div>
         </div>
         <SafeMoviePlayer
-          movieId={movie.slug}
           title={movie.title}
           rightsStatus={movie.rightsStatus}
           source={movie.source}

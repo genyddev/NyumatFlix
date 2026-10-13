@@ -6,11 +6,6 @@ export const approvedInternetArchiveFixture = {
   source: { type: "internet_archive", identifier: "test_public_domain_film_001" },
 } as const satisfies SafePlaybackInput;
 
-export const approvedMuxFixture = {
-  rightsStatus: "approved",
-  source: { type: "mux", playbackId: "TestMuxPlaybackId_0123456789" },
-} as const satisfies SafePlaybackInput;
-
 export const approvedBunnyStreamFixture = {
   rightsStatus: "approved",
   source: {

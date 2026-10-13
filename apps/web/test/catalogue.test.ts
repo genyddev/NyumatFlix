@@ -8,13 +8,11 @@ import {
   isValidInternetArchiveIdentifier,
   isValidBunnyLibraryId,
   isValidBunnyVideoId,
-  isValidMuxPlaybackId,
   resolveApprovedPlayback,
 } from "../lib/player-policy.ts";
 import {
   approvedInternetArchiveFixture,
   approvedBunnyStreamFixture,
-  approvedMuxFixture,
 } from "./fixtures/private-player-fixtures.ts";
 
 const webRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -58,9 +56,6 @@ describe("local demonstration catalogue", () => {
     assert.equal(isValidInternetArchiveIdentifier("test_public_domain_film_001"), true);
     assert.equal(isValidInternetArchiveIdentifier("https://archive.org/details/example"), false);
     assert.equal(isValidInternetArchiveIdentifier("../example?file=movie.mp4"), false);
-    assert.equal(isValidMuxPlaybackId("TestMuxPlaybackId_0123456789"), true);
-    assert.equal(isValidMuxPlaybackId("https://stream.mux.com/example.m3u8"), false);
-    assert.equal(isValidMuxPlaybackId("short-id"), false);
     assert.equal(isValidBunnyLibraryId("776547"), true);
     assert.equal(isValidBunnyLibraryId("https://player.mediadelivery.net"), false);
     assert.equal(isValidBunnyVideoId("05458d36-de04-4453-8536-75f063f37ab1"), true);
@@ -69,9 +64,8 @@ describe("local demonstration catalogue", () => {
 
   test("routes all approved private fixtures and blocks every other rights state", () => {
     assert.deepEqual(resolveApprovedPlayback(approvedInternetArchiveFixture), approvedInternetArchiveFixture.source);
-    assert.deepEqual(resolveApprovedPlayback(approvedMuxFixture), approvedMuxFixture.source);
     assert.deepEqual(resolveApprovedPlayback(approvedBunnyStreamFixture), approvedBunnyStreamFixture.source);
-    assert.equal(resolveApprovedPlayback({ ...approvedMuxFixture, rightsStatus: "unverified" }), null);
+    assert.equal(resolveApprovedPlayback({ ...approvedBunnyStreamFixture, rightsStatus: "unverified" }), null);
     assert.equal(resolveApprovedPlayback({ ...approvedInternetArchiveFixture, rightsStatus: "rejected" }), null);
     assert.equal(resolveApprovedPlayback({ rightsStatus: "approved", source: null }), null);
   });
@@ -92,14 +86,23 @@ describe("local demonstration catalogue", () => {
     assert.doesNotMatch(runtimeSource, /dangerouslySetInnerHTML/i);
   });
 
-  test("CSP permits playback origins but no upload, R2, or YouTube origin", async () => {
+  test("CSP permits exactly the Archive and Bunny frame origins", async () => {
     const config = await readFile(`${webRoot}next.config.mjs`, "utf8");
-    assert.match(config, /frame-src https:\/\/archive\.org/);
-    assert.match(config, /frame-src [^;]*https:\/\/player\.mediadelivery\.net/);
-    assert.match(config, /media-src blob: https:\/\/\*\.mux\.com/);
-    assert.match(config, /connect-src 'self' https:\/\/\*\.mux\.com https:\/\/\*\.litix\.io/);
+    assert.match(config, /frame-src https:\/\/archive\.org https:\/\/player\.mediadelivery\.net;/);
+    assert.match(config, /connect-src 'self'; media-src 'none'; worker-src 'none';/);
     assert.doesNotMatch(config, /storage\.googleapis\.com|youtube|youtu\.be|r2\.cloudflarestorage\.com/i);
     assert.doesNotMatch(config, /media-src\s+\*/i);
+  });
+
+  test("runtime and package manifest contain exactly two provider implementations", async () => {
+    const playerPolicy = await readFile(`${webRoot}lib/player-policy.ts`, "utf8");
+    const playerRouter = await readFile(`${webRoot}components/player/safe-movie-player.tsx`, "utf8");
+    const packageManifest = await readFile(`${webRoot}package.json`, "utf8");
+    assert.deepEqual([...playerPolicy.matchAll(/type: "([a-z_]+)"/g)].map((match) => match[1]), [
+      "internet_archive",
+      "bunny_stream",
+    ]);
+    assert.deepEqual(Object.keys(JSON.parse(packageManifest).dependencies).sort(), ["next", "react", "react-dom"]);
   });
 
   test("documents the future domain and Bunny allowlist without changing the test video", async () => {

@@ -1,6 +1,6 @@
 # Udhekryqi Filma
 
-Udhekryqi Filma is the current visual demonstration catalogue. Its fictional public catalogue entries remain unplayable. The safe player architecture supports only rights-approved Internet Archive identifiers, validated Mux playback IDs, and validated Bunny Stream library/video identifiers; it does not connect to authentication, email, or database services.
+Udhekryqi Filma is the current visual demonstration catalogue. Its fictional public catalogue entries remain unplayable. The safe player architecture supports exactly two source types: rights-approved Internet Archive identifiers and validated Bunny Stream library/video identifiers. It does not connect to authentication, email, or database services.
 
 The future public domain is `kokomax.al`, with `www.kokomax.al` reserved as an optional hostname. The visual KokoMax rebrand, public metadata, DNS configuration, and deployment are intentionally deferred to a separate task.
 
