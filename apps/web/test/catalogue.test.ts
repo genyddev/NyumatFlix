@@ -101,4 +101,18 @@ describe("local demonstration catalogue", () => {
     assert.doesNotMatch(config, /storage\.googleapis\.com|youtube|youtu\.be|r2\.cloudflarestorage\.com/i);
     assert.doesNotMatch(config, /media-src\s+\*/i);
   });
+
+  test("documents the future domain and Bunny allowlist without changing the test video", async () => {
+    const deployment = await readFile(new URL("../../../DEPLOYMENT.md", import.meta.url), "utf8");
+    assert.match(deployment, /^kokomax\.al$/m);
+    assert.match(deployment, /^www\.kokomax\.al$/m);
+    assert.match(deployment, /^localhost$/m);
+    assert.match(deployment, /No deployment, DNS change/);
+
+    const testMovie = privateTestMovies[0];
+    assert.equal(testMovie?.source.type, "bunny_stream");
+    if (testMovie?.source.type !== "bunny_stream") assert.fail("Expected the Bunny Stream test fixture");
+    assert.equal(testMovie.source.libraryId, "776547");
+    assert.equal(testMovie.source.videoId, "05458d36-de04-4453-8536-75f063f37ab1");
+  });
 });

@@ -27,4 +27,4 @@ The removed configuration included catalogue keys, authentication/email secrets,
 
 ## Current safety boundary
 
-The phase-one application initially had no playback implementation. The subsequent safe-player revision is documented in `PLAYER_SECURITY.md`: it adds only rights-gated Internet Archive and Mux playback, without restoring provider discovery, arbitrary URLs, scraping, proxying, authentication, uploads, email, or a database.
+The phase-one application initially had no playback implementation. The subsequent safe-player revisions are documented in `PLAYER_SECURITY.md`: they add only rights-gated Internet Archive, Mux, and Bunny Stream playback, without restoring provider discovery, arbitrary URLs, scraping, proxying, authentication, uploads, email, or a database. The planned `kokomax.al` domain and the still-pending deployment boundary are documented in `DEPLOYMENT.md`.

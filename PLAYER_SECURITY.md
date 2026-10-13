@@ -49,8 +49,11 @@ The application accepts only a numeric library ID and a UUID-shaped video ID. `B
 
 The parent CSP adds only `https://player.mediadelivery.net` to `frame-src`; it does not add a Bunny wildcard, API origin, storage hostname, or direct media origin. Playback through Bunny's hosted iframe needs no API key. No Bunny API key, upload credential, or management endpoint exists in browser or server code.
 
+The future Bunny Stream allowed-domain list is `kokomax.al`, `www.kokomax.al`, and `localhost`. Bunny matches the iframe request's referrer hostname, so these dashboard entries are written without schemes, paths, or ports. The iframe's `strict-origin-when-cross-origin` policy preserves hostname validation while withholding the movie-page path. `localhost` keeps development playback working; neither production hostname is required for local testing. See `DEPLOYMENT.md` for the manual dashboard checklist. No Bunny security setting is changed through an API.
+
 Official reference:
 
 - https://github.com/BunnyWay/documentation/blob/main/stream/embedding.mdx
+- https://github.com/BunnyWay/documentation/blob/main/stream/security-options.mdx
 
 The approved Bunny record in `private-test-catalogue.ts` is a technical fixture. It is intentionally omitted from every public catalogue collection, homepage row, movie grid, and search result, and can be opened only through its direct route.
