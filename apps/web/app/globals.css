@@ -36,9 +36,9 @@ button, input { font: inherit; }
   background: linear-gradient(180deg, rgba(5, 6, 8, 0.96), rgba(5, 6, 8, 0.72) 72%, transparent);
   backdrop-filter: blur(12px);
 }
-.brand { display: block; width: 138px; height: 39px; white-space: nowrap; }
+.brand { display: block; width: 138px; height: 46px; white-space: nowrap; }
 .brand-logo-window { display: block; width: 100%; height: 100%; overflow: hidden; }
-.brand-logo { display: block; width: 100%; height: auto; transform: translateY(-34px); }
+.brand-logo { display: block; width: 100%; height: auto; transform: translateY(-28px); }
 .main-nav { display: flex; align-items: center; gap: 28px; color: #c5c4c4; font-size: 14px; }
 .main-nav a { transition: color 160ms ease; }
 .main-nav a:hover, .main-nav a:focus-visible { color: white; }
@@ -152,8 +152,8 @@ button, input { font: inherit; }
 @media (max-width: 760px) {
   :root { --header-height: 66px; }
   .site-header { grid-template-columns: 1fr auto; gap: 15px; padding-inline: 17px; }
-  .brand { width: 118px; height: 34px; }
-  .brand-logo { transform: translateY(-29px); }
+  .brand { width: 118px; height: 40px; }
+  .brand-logo { transform: translateY(-24px); }
   .main-nav { display: none; }
   .header-search { width: 126px; }
   .header-search input { padding-left: 12px; }
