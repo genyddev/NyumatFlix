@@ -3,9 +3,10 @@ import Link from "next/link";
 export function SiteHeader() {
   return (
     <header className="site-header">
-      <Link className="brand" href="/" aria-label="Udhekryqi Filma — Ballina">
-        <span className="brand-mark" aria-hidden="true">U</span>
-        <span>Udhekryqi <strong>Filma</strong></span>
+      <Link className="brand" href="/" aria-label="KokoMax — Ballina">
+        <span className="brand-logo-window">
+          <img className="brand-logo" src="/koko-logo.png" alt="KokoMax" width="5000" height="3508" />
+        </span>
       </Link>
       <nav className="main-nav" aria-label="Navigimi kryesor">
         <Link href="/">Ballina</Link>

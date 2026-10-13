@@ -1,6 +1,6 @@
 # Planned domain and deployment boundary
 
-No deployment, DNS change, production subdomain connection, or metadata rebrand has been performed in this phase.
+No deployment, DNS change, or production subdomain connection has been performed in this phase. The KokoMax name, supplied logo, canonical metadata, and social-sharing metadata are configured locally only.
 
 ## Future public domain
 
@@ -8,7 +8,7 @@ No deployment, DNS change, production subdomain connection, or metadata rebrand 
 - Optional `www` hostname: `www.kokomax.al`
 - Local development hostname: `localhost`
 
-The previous planned hostname, `filma.udhekryqi.al`, is retired and must not be used for the streaming platform. A later deployment task will decide whether `www.kokomax.al` redirects to `kokomax.al` or serves the application directly. That task will also update canonical URLs, social metadata, branding assets, DNS, and hosting configuration.
+The previous planned hostname, `filma.udhekryqi.al`, is retired and must not be used for the streaming platform. A later deployment task will decide whether `www.kokomax.al` redirects to `kokomax.al` or serves the application directly, and will configure DNS and hosting.
 
 Local development remains available through URLs such as `http://localhost:3000` and `http://localhost:3210`.
 

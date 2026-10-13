@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -76,6 +77,7 @@ describe("local demonstration catalogue", () => {
     const remoteUrls = runtimeSource.match(/https?:\/\/[^\s`"']+/gi) ?? [];
     assert.deepEqual(remoteUrls.sort(), [
       "https://archive.org/embed/${identifier}",
+      "https://kokomax.al",
       "https://player.mediadelivery.net/embed/${libraryId}/${videoId}?autoplay=false&muted=false",
     ].sort());
     assert.doesNotMatch(runtimeSource, /\bfetch\s*\(/i);
@@ -117,5 +119,18 @@ describe("local demonstration catalogue", () => {
     if (testMovie?.source.type !== "bunny_stream") assert.fail("Expected the Bunny Stream test fixture");
     assert.equal(testMovie.source.libraryId, "776547");
     assert.equal(testMovie.source.videoId, "05458d36-de04-4453-8536-75f063f37ab1");
+  });
+
+  test("uses the supplied KokoMax logo and metadata without old user-facing branding", async () => {
+    const logo = await readFile(`${webRoot}public/koko-logo.png`);
+    assert.equal(createHash("sha256").update(logo).digest("hex"), "597392ac3563f7588aa5aa239f81bc04a17e33e1e8764d89de6493b7824dc9c5");
+
+    const runtimeFiles = (await Promise.all(["app", "components", "lib"].map((folder) => sourceFiles(`${webRoot}${folder}`)))).flat();
+    const runtimeSource = (await Promise.all(runtimeFiles.map((file) => readFile(file, "utf8")))).join("\n");
+    assert.doesNotMatch(runtimeSource, /Udhekryqi Filma/);
+    assert.match(runtimeSource, /KokoMax — Nga Udhekryqi Media/);
+    assert.match(runtimeSource, /metadataBase: new URL\(SITE_URL\)/);
+    assert.match(runtimeSource, /aria-label="KokoMax — Ballina"/);
+    assert.match(runtimeSource, /alt="KokoMax"/);
   });
 });

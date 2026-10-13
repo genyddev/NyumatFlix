@@ -5,6 +5,7 @@ import { SafeMoviePlayer } from "@/components/player/safe-movie-player";
 import { PosterArt } from "@/components/poster-art";
 import { demoMovies, formatDuration, getDemoMovie } from "@/lib/demo-catalogue";
 import { getPrivateTestMovie, privateTestMovies } from "@/lib/private-test-catalogue";
+import { createPageMetadata } from "@/lib/site-metadata";
 
 export function generateStaticParams() {
   return [...demoMovies, ...privateTestMovies].map((movie) => ({ slug: movie.slug }));
@@ -15,8 +16,9 @@ function getMovie(slug: string) {
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const movie = getMovie((await params).slug);
-  return movie ? { title: movie.title, description: movie.synopsis } : {};
+  const slug = (await params).slug;
+  const movie = getMovie(slug);
+  return movie ? createPageMetadata({ title: movie.title, description: movie.synopsis, path: `/movies/${slug}` }) : {};
 }
 
 export default async function MovieDetailPage({ params }: { params: Promise<{ slug: string }> }) {

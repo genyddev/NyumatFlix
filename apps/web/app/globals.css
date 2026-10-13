@@ -36,13 +36,9 @@ button, input { font: inherit; }
   background: linear-gradient(180deg, rgba(5, 6, 8, 0.96), rgba(5, 6, 8, 0.72) 72%, transparent);
   backdrop-filter: blur(12px);
 }
-.brand { display: flex; align-items: center; gap: 11px; font-size: 18px; letter-spacing: -0.02em; white-space: nowrap; }
-.brand strong { color: var(--brand); font-weight: 760; }
-.brand-mark {
-  display: grid; place-items: center; width: 35px; height: 35px; border-radius: 11px 11px 11px 3px;
-  color: #17100a; font-weight: 900; font-size: 20px; background: linear-gradient(135deg, #ffd48b, #e67740 70%);
-  box-shadow: 0 9px 32px rgba(231, 119, 61, 0.3);
-}
+.brand { display: block; width: 158px; height: 41px; white-space: nowrap; }
+.brand-logo-window { display: block; width: 100%; height: 100%; overflow: hidden; }
+.brand-logo { display: block; width: 100%; height: auto; transform: translateY(-33px); }
 .main-nav { display: flex; align-items: center; gap: 28px; color: #c5c4c4; font-size: 14px; }
 .main-nav a { transition: color 160ms ease; }
 .main-nav a:hover, .main-nav a:focus-visible { color: white; }
@@ -156,8 +152,8 @@ button, input { font: inherit; }
 @media (max-width: 760px) {
   :root { --header-height: 66px; }
   .site-header { grid-template-columns: 1fr auto; gap: 15px; padding-inline: 17px; }
-  .brand { font-size: 15px; }
-  .brand-mark { width: 32px; height: 32px; }
+  .brand { width: 140px; height: 38px; }
+  .brand-logo { transform: translateY(-29px); }
   .main-nav { display: none; }
   .header-search { width: 126px; }
   .header-search input { padding-left: 12px; }

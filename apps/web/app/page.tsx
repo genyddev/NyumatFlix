@@ -1,7 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { MovieRow } from "@/components/movie-row";
 import { PosterArt } from "@/components/poster-art";
 import { catalogueRows, featuredMovie, formatDuration, getMoviesBySlug } from "@/lib/demo-catalogue";
+import { createPageMetadata } from "@/lib/site-metadata";
+
+export const metadata: Metadata = createPageMetadata();
 
 export default function HomePage() {
   return (

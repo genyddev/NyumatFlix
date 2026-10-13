@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import { MovieCard } from "@/components/movie-card";
 import { searchDemoMovies } from "@/lib/demo-catalogue";
+import { createPageMetadata } from "@/lib/site-metadata";
 
-export const metadata: Metadata = { title: "Kërko" };
+export const metadata: Metadata = createPageMetadata({
+  title: "Kërko",
+  description: "Kërko në katalogun demonstrues të filmave në KokoMax.",
+  path: "/search",
+});
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q = "" } = await searchParams;
