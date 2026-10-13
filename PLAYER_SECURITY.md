@@ -34,4 +34,4 @@ Official reference:
 - https://github.com/BunnyWay/documentation/blob/main/stream/embedding.mdx
 - https://github.com/BunnyWay/documentation/blob/main/stream/security-options.mdx
 
-The approved Bunny record in `private-test-catalogue.ts` is a technical fixture. It is intentionally omitted from every public catalogue collection, homepage row, movie grid, and search result, and can be opened only through its direct route.
+The approved Bunny record is seeded in Supabase as a private draft and is also retained in `private-test-catalogue.ts` as a test-only fixture. It is intentionally omitted from every public catalogue query, homepage row, movie grid, search result, and public detail route. Playback is available only through the authenticated administrator preview.

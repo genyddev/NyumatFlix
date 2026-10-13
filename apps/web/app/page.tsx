@@ -2,12 +2,26 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { MovieRow } from "@/components/movie-row";
 import { PosterArt } from "@/components/poster-art";
-import { catalogueRows, featuredMovie, formatDuration, getMoviesBySlug } from "@/lib/demo-catalogue";
+import { formatDuration } from "@/lib/catalogue-types";
+import { listPublicMovies } from "@/lib/catalogue-repository";
 import { createPageMetadata } from "@/lib/site-metadata";
 
 export const metadata: Metadata = createPageMetadata();
+export const dynamic = "force-dynamic";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const movies = await listPublicMovies();
+  const featuredMovie = movies.find((movie) => movie.featured) ?? movies[0];
+  if (!featuredMovie) {
+    return (
+      <div className="catalogue-shell page-shell safe-empty-catalogue">
+        <p className="eyebrow">KokoMax</p>
+        <h1>Katalogu po përgatitet.</h1>
+        <p>Nuk ka ende filma të miratuar dhe të publikuar. Regjistrimet draft ose të paverifikuara nuk shfaqen publikisht.</p>
+      </div>
+    );
+  }
+  const remaining = movies.filter((movie) => movie.id !== featuredMovie.id);
   return (
     <>
       <section className="hero" style={{ "--accent": featuredMovie.accent, "--shadow": featuredMovie.shadow } as React.CSSProperties}>
@@ -28,8 +42,8 @@ export default function HomePage() {
         </div>
       </section>
       <div className="catalogue-shell home-rows">
-        <div className="demo-note"><span>Demonstrim lokal</span> Të gjithë titujt dhe përshkrimet janë imagjinarë.</div>
-        {catalogueRows.map((row) => <MovieRow key={row.title} title={row.title} movies={getMoviesBySlug(row.slugs)} />)}
+        <MovieRow title="Të përzgjedhurat" movies={[featuredMovie, ...remaining.slice(0, 5)]} />
+        {remaining.length > 5 ? <MovieRow title="Histori për t’u zbuluar" movies={remaining.slice(5)} /> : null}
       </div>
     </>
   );

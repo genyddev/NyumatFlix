@@ -11,6 +11,8 @@
     "test": "node --experimental-strip-types --test test/catalogue.test.ts"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.3",
     "next": "16.3.6",
     "react": "19.2.0",
     "react-dom": "19.2.0"

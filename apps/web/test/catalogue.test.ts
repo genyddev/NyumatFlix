@@ -104,7 +104,13 @@ describe("local demonstration catalogue", () => {
       "internet_archive",
       "bunny_stream",
     ]);
-    assert.deepEqual(Object.keys(JSON.parse(packageManifest).dependencies).sort(), ["next", "react", "react-dom"]);
+    assert.deepEqual(Object.keys(JSON.parse(packageManifest).dependencies).sort(), [
+      "@supabase/ssr",
+      "@supabase/supabase-js",
+      "next",
+      "react",
+      "react-dom",
+    ]);
   });
 
   test("documents the future domain and Bunny allowlist without changing the test video", async () => {
@@ -132,5 +138,60 @@ describe("local demonstration catalogue", () => {
     assert.match(runtimeSource, /metadataBase: new URL\(SITE_URL\)/);
     assert.match(runtimeSource, /aria-label="KokoMax — Ballina"/);
     assert.match(runtimeSource, /alt="KokoMax"/);
+  });
+
+  test("moves every public catalogue route to the anonymous database repository", async () => {
+    const publicPages = [
+      `${webRoot}app/page.tsx`,
+      `${webRoot}app/movies/page.tsx`,
+      `${webRoot}app/movies/[slug]/page.tsx`,
+      `${webRoot}app/search/page.tsx`,
+    ];
+    const source = (await Promise.all(publicPages.map((file) => readFile(file, "utf8")))).join("\n");
+    assert.doesNotMatch(source, /demo-catalogue/);
+    assert.doesNotMatch(source, /private-test-catalogue/);
+    assert.match(source, /catalogue-repository/);
+
+    const repository = await readFile(`${webRoot}lib/catalogue-repository.ts`, "utf8");
+    assert.match(repository, /createPublicSupabaseClient/);
+    assert.match(repository, /if \(!hasSupabaseEnvironment\(\)\) return \[\]/);
+    assert.doesNotMatch(repository, /service.role|service_role/i);
+  });
+
+  test("protects admin routes and write actions with verified SSR authentication", async () => {
+    const adminAuth = await readFile(`${webRoot}lib/admin-auth.ts`, "utf8");
+    const serverClient = await readFile(`${webRoot}lib/supabase/server.ts`, "utf8");
+    const proxy = await readFile(`${webRoot}lib/supabase/proxy.ts`, "utf8");
+    const actions = await readFile(`${webRoot}app/admin/actions.ts`, "utf8");
+    assert.match(adminAuth, /getClaims\(\)/);
+    assert.match(adminAuth, /from\("admin_users"\)/);
+    assert.match(serverClient, /httpOnly: true|AUTH_COOKIE_OPTIONS/);
+    assert.match(proxy, /getClaims\(\)/);
+    assert.equal(actions.match(/await requireAdmin\(\)/g)?.length, 4);
+    assert.doesNotMatch(actions, /signUp|hardcoded|service_role|BUNNY_?(?:API|SECRET|TOKEN)/i);
+  });
+
+  test("defines database constraints, RLS, storage policies, audit logging, and safe seeds", async () => {
+    const schema = await readFile(new URL("../../../supabase/migrations/202610130001_phase1_admin_schema.sql", import.meta.url), "utf8");
+    const seed = await readFile(new URL("../../../supabase/migrations/202610130002_seed_demo_catalogue.sql", import.meta.url), "utf8");
+    for (const table of ["admin_users", "movies", "admin_audit_log"]) {
+      assert.match(schema, new RegExp(`alter table public\\.${table} enable row level security`, "i"));
+    }
+    assert.match(schema, /movies_source_combination/);
+    assert.match(schema, /movies_publication_rights/);
+    assert.match(schema, /rights_status = 'approved' and publication_status = 'published'/);
+    assert.match(schema, /create trigger movies_audit/);
+    assert.match(schema, /'catalogue-media'.*true/s);
+    assert.match(schema, /'rights-documents'.*false/s);
+    assert.match(seed, /'bunny-stream-test'.*'approved'.*'bunny_stream'.*'776547'.*'05458d36-de04-4453-8536-75f063f37ab1'.*'draft'/s);
+    assert.equal((seed.match(/'unverified'/g) ?? []).length, 6);
+    assert.doesNotMatch(seed, /'unverified'[^;]*'published'/s);
+  });
+
+  test("provides only public Supabase environment names and no secret-key slot", async () => {
+    const environment = await readFile(new URL("../../../.env.example", import.meta.url), "utf8");
+    assert.match(environment, /^NEXT_PUBLIC_SUPABASE_URL=$/m);
+    assert.match(environment, /^NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$/m);
+    assert.doesNotMatch(environment, /^(?!#).*(?:SERVICE|SECRET|BUNNY|PASSWORD).*=/im);
   });
 });

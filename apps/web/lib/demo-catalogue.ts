@@ -14,6 +14,10 @@ export type DemoMovie = Readonly<{
   accent: string;
   shadow: string;
   motif: PosterMotif;
+  posterUrl: null;
+  backdropUrl: null;
+  posterPath: null;
+  backdropPath: null;
   rightsStatus: RightsStatus;
   source: MovieVideoSource | null;
 }>;
@@ -31,6 +35,10 @@ export const demoMovies = [
     accent: "#f4b45f",
     shadow: "#6f2f40",
     motif: "orbit",
+    posterUrl: null,
+    backdropUrl: null,
+    posterPath: null,
+    backdropPath: null,
     rightsStatus: "unverified",
     source: null,
   },
@@ -46,6 +54,10 @@ export const demoMovies = [
     accent: "#83c7b8",
     shadow: "#173b45",
     motif: "ridge",
+    posterUrl: null,
+    backdropUrl: null,
+    posterPath: null,
+    backdropPath: null,
     rightsStatus: "unverified",
     source: null,
   },
@@ -61,6 +73,10 @@ export const demoMovies = [
     accent: "#f26d78",
     shadow: "#381c45",
     motif: "signal",
+    posterUrl: null,
+    backdropUrl: null,
+    posterPath: null,
+    backdropPath: null,
     rightsStatus: "unverified",
     source: null,
   },
@@ -76,6 +92,10 @@ export const demoMovies = [
     accent: "#d9c28b",
     shadow: "#3c4a49",
     motif: "archive",
+    posterUrl: null,
+    backdropUrl: null,
+    posterPath: null,
+    backdropPath: null,
     rightsStatus: "unverified",
     source: null,
   },
@@ -91,6 +111,10 @@ export const demoMovies = [
     accent: "#f0ca55",
     shadow: "#18224a",
     motif: "city",
+    posterUrl: null,
+    backdropUrl: null,
+    posterPath: null,
+    backdropPath: null,
     rightsStatus: "unverified",
     source: null,
   },
@@ -106,6 +130,10 @@ export const demoMovies = [
     accent: "#61bce8",
     shadow: "#18345a",
     motif: "line",
+    posterUrl: null,
+    backdropUrl: null,
+    posterPath: null,
+    backdropPath: null,
     rightsStatus: "unverified",
     source: null,
   },

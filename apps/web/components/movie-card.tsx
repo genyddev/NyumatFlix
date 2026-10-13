@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { formatDuration, type DemoMovie } from "@/lib/demo-catalogue";
+import { formatDuration, type MoviePresentation } from "@/lib/catalogue-types";
 import { PosterArt } from "./poster-art";
 
-export function MovieCard({ movie }: { movie: DemoMovie }) {
+export function MovieCard({ movie }: { movie: MoviePresentation }) {
   return (
     <article className="movie-card">
       <Link href={`/movies/${movie.slug}`} aria-label={`Hap ${movie.title}`}>

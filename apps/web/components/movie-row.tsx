@@ -1,7 +1,7 @@
-import type { DemoMovie } from "@/lib/demo-catalogue";
+import type { MoviePresentation } from "@/lib/catalogue-types";
 import { MovieCard } from "./movie-card";
 
-export function MovieRow({ title, movies }: { title: string; movies: readonly DemoMovie[] }) {
+export function MovieRow({ title, movies }: { title: string; movies: readonly MoviePresentation[] }) {
   return (
     <section className="content-section">
       <div className="section-heading">

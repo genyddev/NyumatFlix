@@ -15,6 +15,10 @@ export const privateTestMovies = [
     accent: "#f2a65a",
     shadow: "#213c50",
     motif: "signal",
+    posterUrl: null,
+    backdropUrl: null,
+    posterPath: null,
+    backdropPath: null,
     rightsStatus: "approved",
     source: {
       type: "bunny_stream",
