@@ -3,14 +3,16 @@ import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { demoMovies, getDemoMovie, searchDemoMovies } from "../lib/demo-catalogue.ts";
-import { privateTestMovies } from "../lib/private-test-catalogue.ts";
 import {
   isValidInternetArchiveIdentifier,
   isValidBunnyLibraryId,
   isValidBunnyVideoId,
   resolveApprovedPlayback,
 } from "../lib/player-policy.ts";
+import {
+  fictionalCatalogueFixtures,
+  privateBunnyMovieFixture,
+} from "./fixtures/catalogue-fixtures.ts";
 import {
   approvedInternetArchiveFixture,
   approvedBunnyStreamFixture,
@@ -28,29 +30,23 @@ async function sourceFiles(directory: string): Promise<string[]> {
   return nested.flat();
 }
 
-describe("local demonstration catalogue", () => {
-  test("uses unique local slugs", () => {
-    assert.equal(new Set(demoMovies.map((movie) => movie.slug)).size, demoMovies.length);
+describe("test-only catalogue fixtures", () => {
+  test("uses unique test fixture slugs", () => {
+    const fixtures = [...fictionalCatalogueFixtures, privateBunnyMovieFixture];
+    assert.equal(new Set(fixtures.map((movie) => movie.slug)).size, fixtures.length);
   });
 
-  test("keeps every fictional public catalogue record unplayable", () => {
-    const serialized = JSON.stringify(demoMovies);
+  test("keeps every fictional fixture unplayable", () => {
+    const serialized = JSON.stringify(fictionalCatalogueFixtures);
     assert.doesNotMatch(serialized, /https?:\/\//i);
-    assert.ok(demoMovies.every((movie) => movie.rightsStatus === "unverified" && movie.source === null));
+    assert.ok(fictionalCatalogueFixtures.every((movie) => movie.rightsStatus === "unverified" && movie.source === null));
   });
 
-  test("resolves details and searches locally", () => {
-    assert.equal(getDemoMovie("harta-e-heshtur")?.title, "Harta e Heshtur");
-    assert.deepEqual(searchDemoMovies("fantashkencë").map((movie) => movie.slug), ["sinjali-i-mengjesit"]);
-  });
-
-  test("keeps the approved Bunny technical movie out of every public collection", () => {
-    assert.equal(privateTestMovies.length, 1);
-    assert.deepEqual(privateTestMovies[0]?.source, approvedBunnyStreamFixture.source);
-    assert.equal(privateTestMovies[0]?.rightsStatus, "approved");
-    const publicSlugs = new Set<string>(demoMovies.map((movie) => movie.slug));
-    assert.equal(publicSlugs.has(privateTestMovies[0]?.slug ?? ""), false);
-    assert.equal(searchDemoMovies("Bunny Stream").length, 0);
+  test("keeps the approved Bunny technical movie separate from fictional fixtures", () => {
+    assert.deepEqual(privateBunnyMovieFixture.source, approvedBunnyStreamFixture.source);
+    assert.equal(privateBunnyMovieFixture.rightsStatus, "approved");
+    const fictionalSlugs = new Set<string>(fictionalCatalogueFixtures.map((movie) => movie.slug));
+    assert.equal(fictionalSlugs.has(privateBunnyMovieFixture.slug), false);
   });
 
   test("accepts only strict provider identifiers", () => {
@@ -120,9 +116,9 @@ describe("local demonstration catalogue", () => {
     assert.match(deployment, /^localhost$/m);
     assert.match(deployment, /No deployment, DNS change/);
 
-    const testMovie = privateTestMovies[0];
-    assert.equal(testMovie?.source.type, "bunny_stream");
-    if (testMovie?.source.type !== "bunny_stream") assert.fail("Expected the Bunny Stream test fixture");
+    const testMovie = privateBunnyMovieFixture;
+    assert.equal(testMovie.source.type, "bunny_stream");
+    if (testMovie.source.type !== "bunny_stream") assert.fail("Expected the Bunny Stream test fixture");
     assert.equal(testMovie.source.libraryId, "776547");
     assert.equal(testMovie.source.videoId, "05458d36-de04-4453-8536-75f063f37ab1");
   });
@@ -171,9 +167,11 @@ describe("local demonstration catalogue", () => {
     assert.doesNotMatch(actions, /signUp|hardcoded|service_role|BUNNY_?(?:API|SECRET|TOKEN)/i);
   });
 
-  test("defines database constraints, RLS, storage policies, audit logging, and safe seeds", async () => {
-    const schema = await readFile(new URL("../../../supabase/migrations/202610130001_phase1_admin_schema.sql", import.meta.url), "utf8");
-    const seed = await readFile(new URL("../../../supabase/migrations/202610130002_seed_demo_catalogue.sql", import.meta.url), "utf8");
+  test("keeps production migrations structural and free of catalogue fixtures", async () => {
+    const migrationsDirectory = fileURLToPath(new URL("../../../supabase/migrations/", import.meta.url));
+    const migrationNames = (await readdir(migrationsDirectory)).filter((name) => name.endsWith(".sql"));
+    assert.deepEqual(migrationNames, ["202610130001_phase1_admin_schema.sql"]);
+    const schema = await readFile(`${migrationsDirectory}/202610130001_phase1_admin_schema.sql`, "utf8");
     for (const table of ["admin_users", "movies", "admin_audit_log"]) {
       assert.match(schema, new RegExp(`alter table public\\.${table} enable row level security`, "i"));
     }
@@ -183,9 +181,8 @@ describe("local demonstration catalogue", () => {
     assert.match(schema, /create trigger movies_audit/);
     assert.match(schema, /'catalogue-media'.*true/s);
     assert.match(schema, /'rights-documents'.*false/s);
-    assert.match(seed, /'bunny-stream-test'.*'approved'.*'bunny_stream'.*'776547'.*'05458d36-de04-4453-8536-75f063f37ab1'.*'draft'/s);
-    assert.equal((seed.match(/'unverified'/g) ?? []).length, 6);
-    assert.doesNotMatch(seed, /'unverified'[^;]*'published'/s);
+    assert.doesNotMatch(schema, /insert\s+into\s+public\.movies/i);
+    assert.doesNotMatch(schema, /bunny-stream-test|05458d36-de04-4453-8536-75f063f37ab1|Kryqëzimi i Hënës/i);
   });
 
   test("provides only public Supabase environment names and no secret-key slot", async () => {

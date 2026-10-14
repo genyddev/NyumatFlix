@@ -13,7 +13,7 @@ pnpm dev
 
 Then open `http://localhost:3000`.
 
-The site fails closed when Supabase is not configured or unavailable: public catalogue queries return no records and private or draft records remain unavailable. The Bunny technical fixture is visible only through authenticated administrator preview after setup.
+The site fails closed when Supabase is not configured or unavailable: public catalogue queries return no records and private or draft records remain unavailable. Production migrations do not seed films. Fictional and Bunny technical fixtures exist only in automated tests.
 
 ## Checks
 
@@ -25,7 +25,7 @@ pnpm build
 
 ## Attribution
 
-This project is based on the MIT-licensed NyumaFlix source. The original MIT `LICENSE` and copyright notice are preserved unchanged in this repository. The current demonstration catalogue and titles are fictional; no title is represented as being in the public domain.
+This project is based on the MIT-licensed NyumaFlix source. The original MIT `LICENSE` and copyright notice are preserved unchanged in this repository. Fictional test fixtures are not production catalogue records, and no title is represented as being in the public domain.
 
 See [MIGRATION.md](MIGRATION.md) for the phase-one removal inventory and safety boundary.
 See [PLAYER_SECURITY.md](PLAYER_SECURITY.md) for the provider allowlist, rights gate, validation rules, CSP, and upload boundary.

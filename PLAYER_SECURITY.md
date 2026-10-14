@@ -5,7 +5,7 @@ The runtime recognizes exactly two source discriminators:
 - `internet_archive` with a validated Internet Archive identifier.
 - `bunny_stream` with a validated numeric Bunny library ID and UUID video ID.
 
-`SafeMoviePlayer` refuses playback unless the movie has `rightsStatus: "approved"`. `unverified`, `rejected`, missing, and malformed sources render the Albanian safe placeholder. All fictional public demonstration records are unverified and have no source.
+`SafeMoviePlayer` refuses playback unless the movie has `rightsStatus: "approved"`. `unverified`, `rejected`, missing, and malformed sources render the Albanian safe placeholder. Fictional fixtures exist only under the automated test directory, are unverified, and have no source.
 
 ## Internet Archive
 
@@ -34,4 +34,4 @@ Official reference:
 - https://github.com/BunnyWay/documentation/blob/main/stream/embedding.mdx
 - https://github.com/BunnyWay/documentation/blob/main/stream/security-options.mdx
 
-The approved Bunny record is seeded in Supabase as a private draft and is also retained in `private-test-catalogue.ts` as a test-only fixture. It is intentionally omitted from every public catalogue query, homepage row, movie grid, search result, and public detail route. Playback is available only through the authenticated administrator preview.
+The approved Bunny record is retained only in `apps/web/test/fixtures/` for automated/local testing. It is not inserted by any production migration and is omitted from every public catalogue query, homepage row, movie grid, search result, and public detail route. A real administrator may later create a private draft manually for authenticated preview without publishing it.

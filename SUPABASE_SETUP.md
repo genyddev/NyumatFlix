@@ -18,12 +18,11 @@ supabase link --project-ref YOUR_PROJECT_REF
 supabase db push
 ```
 
-Alternativisht, kopjo dhe ekzekuto në **SQL Editor** skedarët në këtë rend:
+Alternativisht, kopjo dhe ekzekuto në **SQL Editor** vetëm këtë migrim prodhimi:
 
 1. `supabase/migrations/202610130001_phase1_admin_schema.sql`
-2. `supabase/migrations/202610130002_seed_demo_catalogue.sql`
 
-Migrimi i parë krijon tabelat, kufizimet, auditimin, RLS dhe dy bucket-at. Migrimi i dytë shton vetëm titujt imagjinarë si draft-e të paverifikuara dhe testin Bunny si draft privat.
+Ky migrim krijon vetëm tabelat, kufizimet, funksionet, auditimin, RLS, politikat dhe dy bucket-at. Nuk shton filma, tituj imagjinarë ose regjistrimin teknik Bunny. Migrimi i mëparshëm `202610130002_seed_demo_catalogue.sql` është hequr dhe nuk duhet aplikuar në një databazë reale. Të dhënat demonstruese dhe ID-të e testit Bunny ruhen vetëm si fixtures të automatizuara nën `apps/web/test/fixtures/`.
 
 ## 3. Krijo administratorin e parë
 
@@ -69,11 +68,10 @@ pnpm dev
 
 Hape `http://localhost:3000/admin`, hyr me përdoruesin e krijuar dhe kontrollo:
 
-1. titujt imagjinarë shfaqen vetëm në administrim si draft-e të paverifikuara;
-2. `Bunny Stream — Test teknik` është draft dhe nuk shfaqet në katalogun publik;
-3. publikimi refuzohet derisa `rights_status` të jetë `approved`;
-4. një përdorues Auth që nuk është në `admin_users` nuk hyn dot;
-5. pa Supabase ose gjatë një gabimi rrjeti, faqet publike tregojnë katalog bosh dhe nuk zbulojnë draft-e.
+1. tabela `movies` është bosh pas migrimit;
+2. publikimi refuzohet derisa `rights_status` të jetë `approved`;
+3. një përdorues Auth që nuk është në `admin_users` nuk hyn dot;
+4. pa Supabase ose gjatë një gabimi rrjeti, faqet publike tregojnë katalog bosh dhe nuk zbulojnë draft-e.
 
 ## Referencat zyrtare
 
