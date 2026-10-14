@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { startTransition, useActionState, useState, type FormEvent } from "react";
+import { initialMovieFormState, type MovieFormState } from "@/lib/admin-form-state";
 import type { CatalogueMovie } from "@/lib/catalogue-types";
 import { validateMovieUploads } from "@/lib/upload-policy";
 
@@ -10,11 +11,13 @@ function selectedFile(formData: FormData, name: string): File | null {
   return value instanceof File && value.size > 0 ? value : null;
 }
 
-export function MovieForm({ movie, action }: { movie?: CatalogueMovie; action: (formData: FormData) => void | Promise<void> }) {
+export function MovieForm({ movie, action }: { movie?: CatalogueMovie; action: (previousState: MovieFormState, formData: FormData) => Promise<MovieFormState> }) {
   const sourceType = movie?.source?.type ?? "";
   const [uploadError, setUploadError] = useState("");
+  const [actionState, dispatchAction, isPending] = useActionState(action, initialMovieFormState);
 
   function validateBeforeSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const error = validateMovieUploads({
       poster: selectedFile(formData, "poster_file"),
@@ -22,13 +25,13 @@ export function MovieForm({ movie, action }: { movie?: CatalogueMovie; action: (
       rightsDocument: selectedFile(formData, "rights_document_file"),
     });
     setUploadError(error ?? "");
-    if (error) event.preventDefault();
+    if (!error) startTransition(() => dispatchAction(formData));
   }
 
   return (
-    <form className="admin-movie-form" action={action} onSubmit={validateBeforeSubmit}>
+    <form className="admin-movie-form" onSubmit={validateBeforeSubmit}>
       {movie ? <input type="hidden" name="id" value={movie.id} /> : null}
-      {uploadError ? <div className="admin-alert admin-alert-error" role="alert">{uploadError}</div> : null}
+      {uploadError || actionState.error ? <div className="admin-alert admin-alert-error" role="alert">{uploadError || actionState.error}</div> : null}
       <section className="admin-form-section">
         <div className="admin-section-heading"><div><p className="eyebrow">Katalogu</p><h2>Të dhënat bazë</h2></div></div>
         <div className="admin-form-grid">
@@ -72,7 +75,7 @@ export function MovieForm({ movie, action }: { movie?: CatalogueMovie; action: (
           <label className="admin-checkbox"><input name="featured" type="checkbox" defaultChecked={movie?.featured} /><span>Shfaqe si film të përzgjedhur</span></label>
         </div>
       </section>
-      <div className="admin-form-actions"><Link className="admin-secondary-button" href="/admin/movies">Anulo</Link><button className="primary-button" type="submit">{movie ? "Ruaj ndryshimet" : "Krijo filmin"}</button></div>
+      <div className="admin-form-actions"><Link className="admin-secondary-button" href="/admin/movies">Anulo</Link><button className="primary-button" type="submit" disabled={isPending}>{isPending ? "Duke ruajtur…" : movie ? "Ruaj ndryshimet" : "Krijo filmin"}</button></div>
     </form>
   );
 }

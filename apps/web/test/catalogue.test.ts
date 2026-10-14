@@ -168,7 +168,12 @@ describe("test-only catalogue fixtures", () => {
     assert.doesNotMatch(publicationAction, /uploadFiles|poster_file|backdrop_file|rights_document_file/);
     assert.match(actions, /uploads\.updates\.poster_path \?\? current\.data\.poster_path/);
     assert.match(actions, /removeUploadedObjects\(supabase, uploads\.uploaded\)/);
+    assert.match(actions, /return \{ error: error instanceof MovieValidationError/);
+    assert.doesNotMatch(actions, /adminRedirect\("\/admin\/movies\/new"/);
+    assert.match(form, /useActionState\(action, initialMovieFormState\)/);
     assert.match(form, /onSubmit=\{validateBeforeSubmit\}/);
+    assert.match(form, /event\.preventDefault\(\)/);
+    assert.match(form, /startTransition\(\(\) => dispatchAction\(formData\)\)/);
     assert.match(form, /role="alert"/);
     assert.match(adminError, /Veprimi nuk mund të përfundohej/);
   });

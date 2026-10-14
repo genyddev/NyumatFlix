@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin-auth";
+import type { MovieFormState } from "@/lib/admin-form-state";
 import type { MovieUpdate } from "@/lib/database.types";
 import { MovieValidationError, parseMovieForm, validateIdentifier } from "@/lib/movie-validation";
 import { hasSupabaseEnvironment } from "@/lib/supabase/config";
@@ -101,7 +102,7 @@ export async function logoutAction() {
   redirect("/admin");
 }
 
-export async function createMovieAction(formData: FormData) {
+export async function createMovieAction(_previousState: MovieFormState, formData: FormData): Promise<MovieFormState> {
   await requireAdmin();
   let createdId = "";
   let rollbackUploads: (() => Promise<void>) | null = null;
@@ -118,14 +119,13 @@ export async function createMovieAction(formData: FormData) {
     rollbackUploads = null;
   } catch (error) {
     if (rollbackUploads) await rollbackUploads();
-    if (error instanceof MovieValidationError) adminRedirect("/admin/movies/new", error.message);
-    adminRedirect("/admin/movies/new", "Filmi nuk mund të ruhej. Provo përsëri.");
+    return { error: error instanceof MovieValidationError ? error.message : "Filmi nuk mund të ruhej. Provo përsëri." };
   }
   refreshCatalogue();
   redirect(`/admin/movies/${createdId}/edit?success=${encodeURIComponent("Filmi u krijua.")}`);
 }
 
-export async function updateMovieAction(formData: FormData) {
+export async function updateMovieAction(_previousState: MovieFormState, formData: FormData): Promise<MovieFormState> {
   await requireAdmin();
   const id = validateIdentifier(formData.get("id"), "ID-ja e filmit");
   let rollbackUploads: (() => Promise<void>) | null = null;
@@ -155,8 +155,7 @@ export async function updateMovieAction(formData: FormData) {
     await removeUploadedObjects(supabase, replaced);
   } catch (error) {
     if (rollbackUploads) await rollbackUploads();
-    if (error instanceof MovieValidationError) adminRedirect(`/admin/movies/${id}/edit`, error.message);
-    adminRedirect(`/admin/movies/${id}/edit`, "Ndryshimet nuk mund të ruheshin. Provo përsëri.");
+    return { error: error instanceof MovieValidationError ? error.message : "Ndryshimet nuk mund të ruheshin. Provo përsëri." };
   }
   refreshCatalogue();
   redirect(`/admin/movies/${id}/edit?success=${encodeURIComponent("Ndryshimet u ruajtën.")}`);
