@@ -1,11 +1,34 @@
+"use client";
+
 import Link from "next/link";
+import { useState, type FormEvent } from "react";
 import type { CatalogueMovie } from "@/lib/catalogue-types";
+import { validateMovieUploads } from "@/lib/upload-policy";
+
+function selectedFile(formData: FormData, name: string): File | null {
+  const value = formData.get(name);
+  return value instanceof File && value.size > 0 ? value : null;
+}
 
 export function MovieForm({ movie, action }: { movie?: CatalogueMovie; action: (formData: FormData) => void | Promise<void> }) {
   const sourceType = movie?.source?.type ?? "";
+  const [uploadError, setUploadError] = useState("");
+
+  function validateBeforeSubmit(event: FormEvent<HTMLFormElement>) {
+    const formData = new FormData(event.currentTarget);
+    const error = validateMovieUploads({
+      poster: selectedFile(formData, "poster_file"),
+      backdrop: selectedFile(formData, "backdrop_file"),
+      rightsDocument: selectedFile(formData, "rights_document_file"),
+    });
+    setUploadError(error ?? "");
+    if (error) event.preventDefault();
+  }
+
   return (
-    <form className="admin-movie-form" action={action}>
+    <form className="admin-movie-form" action={action} onSubmit={validateBeforeSubmit}>
       {movie ? <input type="hidden" name="id" value={movie.id} /> : null}
+      {uploadError ? <div className="admin-alert admin-alert-error" role="alert">{uploadError}</div> : null}
       <section className="admin-form-section">
         <div className="admin-section-heading"><div><p className="eyebrow">Katalogu</p><h2>Të dhënat bazë</h2></div></div>
         <div className="admin-form-grid">

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { pathToFileURL } from "node:url";
 import {
   isValidInternetArchiveIdentifier,
   isValidBunnyLibraryId,
@@ -17,6 +18,13 @@ import {
   approvedInternetArchiveFixture,
   approvedBunnyStreamFixture,
 } from "./fixtures/private-player-fixtures.ts";
+import {
+  BACKDROP_MAX_BYTES,
+  POSTER_MAX_BYTES,
+  RIGHTS_DOCUMENT_MAX_BYTES,
+  SERVER_ACTION_BODY_SIZE_LIMIT,
+  validateMovieUploads,
+} from "../lib/upload-policy.ts";
 
 const webRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -84,12 +92,85 @@ describe("test-only catalogue fixtures", () => {
     assert.doesNotMatch(runtimeSource, /dangerouslySetInnerHTML/i);
   });
 
-  test("CSP permits exactly the Archive and Bunny frame origins", async () => {
-    const config = await readFile(`${webRoot}next.config.mjs`, "utf8");
-    assert.match(config, /frame-src https:\/\/archive\.org https:\/\/player\.mediadelivery\.net;/);
-    assert.match(config, /connect-src 'self'; media-src 'none'; worker-src 'none';/);
-    assert.doesNotMatch(config, /storage\.googleapis\.com|youtube|youtu\.be|r2\.cloudflarestorage\.com/i);
-    assert.doesNotMatch(config, /media-src\s+\*/i);
+  test("CSP enables React debugging only in development and preserves production restrictions", async () => {
+    const previousNodeEnvironment = process.env.NODE_ENV;
+    async function cspFor(mode: "development" | "production") {
+      Reflect.set(process.env, "NODE_ENV", mode);
+      const configUrl = pathToFileURL(`${webRoot}next.config.mjs`);
+      configUrl.searchParams.set("test-mode", mode);
+      const config = (await import(configUrl.href)).default;
+      const headers = await config.headers();
+      return headers[0].headers.find((header: { key: string; value: string }) => header.key === "Content-Security-Policy").value as string;
+    }
+    try {
+      const developmentCsp = await cspFor("development");
+      const productionCsp = await cspFor("production");
+      assert.match(developmentCsp, /script-src[^;]*'unsafe-eval'/);
+      assert.doesNotMatch(productionCsp, /unsafe-eval/);
+      assert.match(productionCsp, /frame-src https:\/\/archive\.org https:\/\/player\.mediadelivery\.net;/);
+      assert.match(productionCsp, /connect-src 'self'; media-src 'none'; worker-src 'none';/);
+      assert.doesNotMatch(productionCsp, /storage\.googleapis\.com|youtube|youtu\.be|r2\.cloudflarestorage\.com|media-src\s+\*/i);
+    } finally {
+      if (previousNodeEnvironment === undefined) Reflect.deleteProperty(process.env, "NODE_ENV");
+      else Reflect.set(process.env, "NODE_ENV", previousNodeEnvironment);
+    }
+  });
+
+  test("accepts bounded upload combinations and rejects every individual overage", () => {
+    const image = (size: number) => ({ size, type: "image/jpeg" }) as File;
+    const document = (size: number) => ({ size, type: "application/pdf" }) as File;
+
+    assert.equal(validateMovieUploads({ poster: image(2 * 1024 * 1024), backdrop: null, rightsDocument: null }), null);
+    assert.equal(validateMovieUploads({
+      poster: image(POSTER_MAX_BYTES),
+      backdrop: image(BACKDROP_MAX_BYTES),
+      rightsDocument: document(RIGHTS_DOCUMENT_MAX_BYTES),
+    }), null);
+    assert.match(validateMovieUploads({ poster: image(POSTER_MAX_BYTES + 1), backdrop: null, rightsDocument: null }) ?? "", /Posteri.*5 MB/);
+    assert.match(validateMovieUploads({ poster: null, backdrop: image(BACKDROP_MAX_BYTES + 1), rightsDocument: null }) ?? "", /Sfondi.*5 MB/);
+    assert.match(validateMovieUploads({ poster: null, backdrop: null, rightsDocument: document(RIGHTS_DOCUMENT_MAX_BYTES + 1) }) ?? "", /Dokumenti.*10 MB/);
+    assert.equal(validateMovieUploads({ poster: null, backdrop: null, rightsDocument: null }), null);
+  });
+
+  test("accepts a draft submission with a poster larger than the former 1 MB limit", () => {
+    const formData = new FormData();
+    for (const [name, value] of Object.entries({
+      title: "Provë lokale",
+      slug: "prove-lokale",
+      tagline: "Test i kufirit të ngarkimit",
+      synopsis: "Ky regjistrim ekziston vetëm brenda testit të automatizuar.",
+      year: "2026",
+      duration_minutes: "90",
+      age_rating: "Të gjithë",
+      genres: "Test",
+      rights_status: "unverified",
+      source_type: "",
+      publication_status: "draft",
+    })) formData.set(name, value);
+    formData.set("poster_file", new Blob([new Uint8Array(2 * 1024 * 1024)], { type: "image/png" }), "poster-test.png");
+
+    const poster = formData.get("poster_file") as File;
+    assert.equal(formData.get("publication_status"), "draft");
+    assert.equal(validateMovieUploads({ poster, backdrop: null, rightsDocument: null }), null);
+  });
+
+  test("uses a bounded 22 MB Server Action limit and keeps publication upload-free", async () => {
+    const configUrl = pathToFileURL(`${webRoot}next.config.mjs`);
+    configUrl.searchParams.set("upload-limit-test", String(Date.now()));
+    const config = (await import(configUrl.href)).default;
+    assert.equal(SERVER_ACTION_BODY_SIZE_LIMIT, "22mb");
+    assert.equal(config.experimental.serverActions.bodySizeLimit, SERVER_ACTION_BODY_SIZE_LIMIT);
+
+    const actions = await readFile(`${webRoot}app/admin/actions.ts`, "utf8");
+    const form = await readFile(`${webRoot}components/admin/movie-form.tsx`, "utf8");
+    const adminError = await readFile(`${webRoot}app/admin/error.tsx`, "utf8");
+    const publicationAction = actions.split("export async function setPublicationAction")[1]?.split("export async function deleteMovieAction")[0] ?? "";
+    assert.doesNotMatch(publicationAction, /uploadFiles|poster_file|backdrop_file|rights_document_file/);
+    assert.match(actions, /uploads\.updates\.poster_path \?\? current\.data\.poster_path/);
+    assert.match(actions, /removeUploadedObjects\(supabase, uploads\.uploaded\)/);
+    assert.match(form, /onSubmit=\{validateBeforeSubmit\}/);
+    assert.match(form, /role="alert"/);
+    assert.match(adminError, /Veprimi nuk mund të përfundohej/);
   });
 
   test("runtime and package manifest contain exactly two provider implementations", async () => {

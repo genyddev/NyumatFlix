@@ -9,9 +9,15 @@ import { MovieValidationError, parseMovieForm, validateIdentifier } from "@/lib/
 import { hasSupabaseEnvironment } from "@/lib/supabase/config";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { authClient } from "@/lib/supabase/auth";
+import {
+  IMAGE_UPLOAD_TYPES,
+  RIGHTS_DOCUMENT_TYPES,
+  validateMovieUploads,
+  type MovieUploadSet,
+} from "@/lib/upload-policy";
 
-const IMAGE_TYPES = new Map([["image/jpeg", "jpg"], ["image/png", "png"], ["image/webp", "webp"], ["image/avif", "avif"]]);
-const RIGHTS_TYPES = new Map([["application/pdf", "pdf"], ["image/jpeg", "jpg"], ["image/png", "png"]]);
+type ServerSupabaseClient = Awaited<ReturnType<typeof createServerSupabaseClient>>;
+type UploadedObject = Readonly<{ bucket: "catalogue-media" | "rights-documents"; path: string }>;
 
 function adminRedirect(path: string, message: string): never {
   redirect(`${path}?error=${encodeURIComponent(message)}`);
@@ -22,34 +28,45 @@ function optionalFile(formData: FormData, field: string): File | null {
   return value instanceof File && value.size > 0 ? value : null;
 }
 
-function validateFile(file: File | null, allowed: ReadonlyMap<string, string>, maxBytes: number, label: string) {
-  if (!file) return;
-  if (file.size > maxBytes) throw new MovieValidationError(`${label} tejkalon kufirin prej ${Math.round(maxBytes / 1024 / 1024)} MB.`);
-  if (!allowed.has(file.type)) throw new MovieValidationError(`${label} ka format të palejuar.`);
+function movieUploadSet(formData: FormData): MovieUploadSet {
+  return {
+    poster: optionalFile(formData, "poster_file"),
+    backdrop: optionalFile(formData, "backdrop_file"),
+    rightsDocument: optionalFile(formData, "rights_document_file"),
+  };
 }
 
-async function uploadFiles(movieId: string, formData: FormData): Promise<MovieUpdate> {
-  const poster = optionalFile(formData, "poster_file");
-  const backdrop = optionalFile(formData, "backdrop_file");
-  const rightsDocument = optionalFile(formData, "rights_document_file");
-  validateFile(poster, IMAGE_TYPES, 5 * 1024 * 1024, "Posteri");
-  validateFile(backdrop, IMAGE_TYPES, 5 * 1024 * 1024, "Sfondi");
-  validateFile(rightsDocument, RIGHTS_TYPES, 10 * 1024 * 1024, "Dokumenti i të drejtave");
-
-  const supabase = await createServerSupabaseClient();
-  const updates: MovieUpdate = {};
-  for (const [file, bucket, folder, field, types] of [
-    [poster, "catalogue-media", "posters", "poster_path", IMAGE_TYPES],
-    [backdrop, "catalogue-media", "backdrops", "backdrop_path", IMAGE_TYPES],
-    [rightsDocument, "rights-documents", "documents", "rights_document_path", RIGHTS_TYPES],
-  ] as const) {
-    if (!file) continue;
-    const path = `${folder}/${movieId}/${randomUUID()}.${types.get(file.type)}`;
-    const { error } = await supabase.storage.from(bucket).upload(path, await file.arrayBuffer(), { contentType: file.type, upsert: false });
-    if (error) throw new MovieValidationError(`Ngarkimi i skedarit dështoi: ${error.message}`);
-    updates[field] = path;
+async function removeUploadedObjects(supabase: ServerSupabaseClient, uploaded: readonly UploadedObject[]) {
+  for (const bucket of ["catalogue-media", "rights-documents"] as const) {
+    const paths = uploaded.filter((item) => item.bucket === bucket).map((item) => item.path);
+    if (paths.length) await supabase.storage.from(bucket).remove(paths);
   }
-  return updates;
+}
+
+async function uploadFiles(supabase: ServerSupabaseClient, movieId: string, formData: FormData): Promise<{ updates: MovieUpdate; uploaded: UploadedObject[] }> {
+  const files = movieUploadSet(formData);
+  const validationError = validateMovieUploads(files);
+  if (validationError) throw new MovieValidationError(validationError);
+  const updates: MovieUpdate = {};
+  const uploaded: UploadedObject[] = [];
+  try {
+    for (const [file, bucket, folder, field, types] of [
+      [files.poster, "catalogue-media", "posters", "poster_path", IMAGE_UPLOAD_TYPES],
+      [files.backdrop, "catalogue-media", "backdrops", "backdrop_path", IMAGE_UPLOAD_TYPES],
+      [files.rightsDocument, "rights-documents", "documents", "rights_document_path", RIGHTS_DOCUMENT_TYPES],
+    ] as const) {
+      if (!file) continue;
+      const path = `${folder}/${movieId}/${randomUUID()}.${types.get(file.type)}`;
+      const { error } = await supabase.storage.from(bucket).upload(path, await file.arrayBuffer(), { contentType: file.type, upsert: false });
+      if (error) throw new MovieValidationError(`Ngarkimi i skedarit dështoi: ${error.message}`);
+      uploaded.push({ bucket, path });
+      updates[field] = path;
+    }
+    return { updates, uploaded };
+  } catch (error) {
+    await removeUploadedObjects(supabase, uploaded);
+    throw error;
+  }
 }
 
 function refreshCatalogue() {
@@ -86,51 +103,63 @@ export async function logoutAction() {
 
 export async function createMovieAction(formData: FormData) {
   await requireAdmin();
+  let createdId = "";
+  let rollbackUploads: (() => Promise<void>) | null = null;
   try {
     const movie = parseMovieForm(formData);
-    validateFile(optionalFile(formData, "poster_file"), IMAGE_TYPES, 5 * 1024 * 1024, "Posteri");
-    validateFile(optionalFile(formData, "backdrop_file"), IMAGE_TYPES, 5 * 1024 * 1024, "Sfondi");
-    validateFile(optionalFile(formData, "rights_document_file"), RIGHTS_TYPES, 10 * 1024 * 1024, "Dokumenti i të drejtave");
     const supabase = await createServerSupabaseClient();
-    const { data, error } = await supabase.from("movies").insert(movie).select("id").single();
-    if (error || !data) throw new MovieValidationError(error?.code === "23505" ? "Ky slug ekziston tashmë." : "Filmi nuk mund të ruhej.");
-    const fileUpdates = await uploadFiles(data.id, formData);
-    if (Object.keys(fileUpdates).length) {
-      const { error: fileUpdateError } = await supabase.from("movies").update(fileUpdates).eq("id", data.id);
-      if (fileUpdateError) throw new MovieValidationError("Filmi u ruajt, por lidhja e skedarëve dështoi.");
+    createdId = randomUUID();
+    const uploads = await uploadFiles(supabase, createdId, formData);
+    rollbackUploads = () => removeUploadedObjects(supabase, uploads.uploaded);
+    const { error } = await supabase.from("movies").insert({ ...movie, id: createdId, ...uploads.updates });
+    if (error) {
+      throw new MovieValidationError(error.code === "23505" ? "Ky slug ekziston tashmë." : "Filmi nuk mund të ruhej.");
     }
-    refreshCatalogue();
-    redirect(`/admin/movies/${data.id}/edit?success=${encodeURIComponent("Filmi u krijua.")}`);
+    rollbackUploads = null;
   } catch (error) {
+    if (rollbackUploads) await rollbackUploads();
     if (error instanceof MovieValidationError) adminRedirect("/admin/movies/new", error.message);
-    throw error;
+    adminRedirect("/admin/movies/new", "Filmi nuk mund të ruhej. Provo përsëri.");
   }
+  refreshCatalogue();
+  redirect(`/admin/movies/${createdId}/edit?success=${encodeURIComponent("Filmi u krijua.")}`);
 }
 
 export async function updateMovieAction(formData: FormData) {
   await requireAdmin();
   const id = validateIdentifier(formData.get("id"), "ID-ja e filmit");
+  let rollbackUploads: (() => Promise<void>) | null = null;
   try {
     const parsed = parseMovieForm(formData);
     const supabase = await createServerSupabaseClient();
     const current = await supabase.from("movies").select("poster_path,backdrop_path,rights_document_path,published_at").eq("id", id).single();
     if (current.error || !current.data) throw new MovieValidationError("Filmi nuk u gjet.");
-    const uploads = await uploadFiles(id, formData);
+    const uploads = await uploadFiles(supabase, id, formData);
+    rollbackUploads = () => removeUploadedObjects(supabase, uploads.uploaded);
     const update: MovieUpdate = {
       ...parsed,
-      poster_path: uploads.poster_path ?? current.data.poster_path,
-      backdrop_path: uploads.backdrop_path ?? current.data.backdrop_path,
-      rights_document_path: uploads.rights_document_path ?? current.data.rights_document_path,
+      poster_path: uploads.updates.poster_path ?? current.data.poster_path,
+      backdrop_path: uploads.updates.backdrop_path ?? current.data.backdrop_path,
+      rights_document_path: uploads.updates.rights_document_path ?? current.data.rights_document_path,
       published_at: parsed.publication_status === "published" ? current.data.published_at ?? new Date().toISOString() : null,
     };
     const { error } = await supabase.from("movies").update(update).eq("id", id);
-    if (error) throw new MovieValidationError(error.code === "23505" ? "Ky slug ekziston tashmë." : "Ndryshimet nuk mund të ruheshin.");
-    refreshCatalogue();
-    redirect(`/admin/movies/${id}/edit?success=${encodeURIComponent("Ndryshimet u ruajtën.")}`);
+    if (error) {
+      throw new MovieValidationError(error.code === "23505" ? "Ky slug ekziston tashmë." : "Ndryshimet nuk mund të ruheshin.");
+    }
+    rollbackUploads = null;
+    const replaced: UploadedObject[] = [];
+    if (uploads.updates.poster_path && current.data.poster_path) replaced.push({ bucket: "catalogue-media", path: current.data.poster_path });
+    if (uploads.updates.backdrop_path && current.data.backdrop_path) replaced.push({ bucket: "catalogue-media", path: current.data.backdrop_path });
+    if (uploads.updates.rights_document_path && current.data.rights_document_path) replaced.push({ bucket: "rights-documents", path: current.data.rights_document_path });
+    await removeUploadedObjects(supabase, replaced);
   } catch (error) {
+    if (rollbackUploads) await rollbackUploads();
     if (error instanceof MovieValidationError) adminRedirect(`/admin/movies/${id}/edit`, error.message);
-    throw error;
+    adminRedirect(`/admin/movies/${id}/edit`, "Ndryshimet nuk mund të ruheshin. Provo përsëri.");
   }
+  refreshCatalogue();
+  redirect(`/admin/movies/${id}/edit?success=${encodeURIComponent("Ndryshimet u ruajtën.")}`);
 }
 
 export async function setPublicationAction(formData: FormData) {
